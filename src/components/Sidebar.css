@@ -1,0 +1,45 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Reglas para el enlace más específicas */
+.sidebar .sidebar-link {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  color: white !important; /* Forzar color blanco */
+  text-decoration: none;
+  background-color: transparent !important; /* Forzar transparente */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 0.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Reglas de hover más específicas con !important */
+.sidebar .sidebar-link:hover,
+.sidebar .sidebar-link:focus,
+.sidebar .sidebar-link:active {
+  background-color: rgba(0, 123, 255, 0.8) !important; /* Forzar color de fondo */
+  color: white !important; /* Forzar color de texto */
+  transform: translateX(5px);
+  border-color: white;
+  text-decoration: none;
+}
+
+/* Asegurarse que Bootstrap no sobrescriba */
+.sidebar .sidebar-link:hover:not(.active),
+.sidebar .sidebar-link:focus:not(.active) {
+  background-color: rgba(0, 123, 255, 0.8) !important;
+  color: white !important;
+}
+
+/* Reglas para iconos */
+.sidebar .sidebar-link i {
+  color: white !important;
+}
