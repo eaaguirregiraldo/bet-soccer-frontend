@@ -6,6 +6,7 @@ export default function CreateMatch() {
   // Estados para el formulario de partido
   const [idTeam1, setIdTeam1] = useState('');
   const [idTeam2, setIdTeam2] = useState('');
+  const [idStadium, setIdStadium] = useState(''); // Nuevo estado para estadio
   const [matchDate, setMatchDate] = useState('');
   const [matchTime, setMatchTime] = useState('');
   
@@ -13,10 +14,12 @@ export default function CreateMatch() {
   const [allMatches, setAllMatches] = useState([]);  // Todos los partidos
   const [displayedMatches, setDisplayedMatches] = useState([]);  // Partidos para mostrar en la página actual
   const [teams, setTeams] = useState([]);
+  const [stadiums, setStadiums] = useState([]); // Nuevo estado para lista de estadios
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [loadingStadiums, setLoadingStadiums] = useState(false); // Estado para carga de estadios
   const matchesPerPage = 10;
   
   // Estados para mensajes y errores
@@ -29,20 +32,25 @@ export default function CreateMatch() {
   const [originalProcesado, setOriginalProcesado] = useState(null); // Nuevo estado para rastrear el valor original
   const [scoreTeam1, setScoreTeam1] = useState('');
   const [scoreTeam2, setScoreTeam2] = useState('');
+  const [editMatchDate, setEditMatchDate] = useState(''); // Nuevo estado para editar fecha
+  const [editMatchTime, setEditMatchTime] = useState(''); // Nuevo estado para editar hora
+  const [editStadiumId, setEditStadiumId] = useState(''); // Nuevo estado para editar estadio
   const [updatingScore, setUpdatingScore] = useState(false);
   const [processingStats, setProcessingStats] = useState(false);
+  const [updatingPoints, setUpdatingPoints] = useState(false);
 
-  // Primero cargar solo los equipos
+  // Primero cargar equipos y estadios
   useEffect(() => {
     loadTeams();
+    loadStadiums(); // Cargar estadios al iniciar
   }, []);
 
   // Después de cargar los equipos, cargar los partidos
   useEffect(() => {
-    if (teams.length > 0) {
+    if (teams.length > 0 && stadiums.length > 0) {
       loadAllMatches();
     }
-  }, [teams]);
+  }, [teams, stadiums]);
 
   // Cargar la lista de equipos
   const loadTeams = async () => {
@@ -64,6 +72,26 @@ export default function CreateMatch() {
     }
   };
 
+  // Cargar la lista de estadios
+  const loadStadiums = async () => {
+    try {
+      setLoadingStadiums(true);
+      const response = await API.get('/stadiums');
+      
+      if (Array.isArray(response.data)) {
+        setStadiums(response.data);
+      } else if (response.data.data) {
+        setStadiums(response.data.data);
+      }
+      console.log('Estadios cargados exitosamente:', response.data.length || response.data.data?.length || 0);
+    } catch (error) {
+      console.error('Error al cargar estadios:', error);
+      setError('Error al cargar la lista de estadios');
+    } finally {
+      setLoadingStadiums(false);
+    }
+  };
+
   // Cargar todos los partidos de una vez
   const loadAllMatches = async () => {
     try {
@@ -80,20 +108,27 @@ export default function CreateMatch() {
       
       console.log('Partidos obtenidos del servidor:', matchesList.length);
       console.log('Equipos disponibles para enriquecer:', teams.length);
+      console.log('Estadios disponibles para enriquecer:', stadiums.length);
       
-      // Enriquecer los datos con información de los equipos
+      // Enriquecer los datos con información de los equipos y estadios
       const enrichedMatches = matchesList.map(match => {
         const team1 = teams.find(team => team.id === match.id_team_1);
         const team2 = teams.find(team => team.id === match.id_team_2);
+        const stadium = stadiums.find(stadium => stadium.id === match.id_stadium);
         
         if (!team1 || !team2) {
           console.log('No se encontró equipo:', !team1 ? `ID equipo 1: ${match.id_team_1}` : `ID equipo 2: ${match.id_team_2}`);
         }
         
+        if (!stadium) {
+          console.log('No se encontró estadio:', `ID estadio: ${match.id_stadium}`);
+        }
+        
         return {
           ...match,
           team1: team1 || { name: 'Equipo desconocido', team_shield: null },
-          team2: team2 || { name: 'Equipo desconocido', team_shield: null }
+          team2: team2 || { name: 'Equipo desconocido', team_shield: null },
+          stadium: stadium || { name: 'Estadio desconocido' }
         };
       });
       
@@ -147,8 +182,8 @@ export default function CreateMatch() {
       return;
     }
 
-    if (!matchDate || !matchTime) {
-      setError('La fecha y hora son obligatorias');
+    if (!matchDate || !matchTime || !idStadium) {
+      setError('La fecha, hora y estadio son obligatorios');
       return;
     }
 
@@ -162,7 +197,7 @@ export default function CreateMatch() {
       await API.post('/schedule_results', {
         id_team_1: idTeam1,
         id_team_2: idTeam2,
-        id_stadium: 1, // Siempre usar 1 como ID del estadio
+        id_stadium: idStadium, // Usar el estadio seleccionado
         date_time: dateTime,
         score_team1: null,
         score_team2: null,
@@ -173,6 +208,7 @@ export default function CreateMatch() {
       setSuccess('Partido creado exitosamente');
       setIdTeam1('');
       setIdTeam2('');
+      setIdStadium('');
       setMatchDate('');
       setMatchTime('');
       
@@ -196,13 +232,26 @@ export default function CreateMatch() {
     
     setScoreTeam1(match.score_team1 !== null ? match.score_team1.toString() : '');
     setScoreTeam2(match.score_team2 !== null ? match.score_team2.toString() : '');
+    
+    // Extraer fecha y hora del partido
+    const dateTime = new Date(match.date_time);
+    const formattedDate = dateTime.toISOString().split('T')[0];
+    const hours = String(dateTime.getHours()).padStart(2, '0');
+    const minutes = String(dateTime.getMinutes()).padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}`;
+    
+    setEditMatchDate(formattedDate);
+    setEditMatchTime(formattedTime);
+    setEditStadiumId(match.id_stadium);
+    
     setShowModal(true);
   };
 
-  // Nueva función para actualizar las estadísticas de grupo
+  // Función modificada para actualizar estadísticas de grupo y puntos de las apuestas
   const handleUpdateGroupStats = async (match) => {
     try {
       setProcessingStats(true);
+      setUpdatingPoints(true);
       setError(null);
       setSuccess(null);
       
@@ -214,25 +263,35 @@ export default function CreateMatch() {
 
       console.log("Procesando estadísticas para partido ID:", match.id);
       
-      // Enviar petición al servidor para procesar las estadísticas
+      // 1. Enviar petición al servidor para procesar las estadísticas
       await API.post(`/group-statistics/${match.id}/update`);
+      console.log("Estadísticas de grupo procesadas correctamente para partido ID:", match.id);
       
-      console.log("Estadísticas procesadas correctamente para partido ID:", match.id);
+      // 2. Actualizar los puntos de las apuestas relacionadas con este partido
+      console.log("Actualizando puntos de apuestas para partido ID:", match.id);
+      const pointsResponse = await API.post(`/matches/${match.id}/update-points`);
+      console.log("Puntos actualizados:", pointsResponse.data);
       
-      setSuccess('Estadísticas de grupo procesadas correctamente');
+      // 3. Actualizar el estado del partido a procesado=1 después de procesar todo
+      await API.put(`/schedule_results/${match.id}`, {
+        procesado: 1
+      });
+      
+      setSuccess('Estadísticas de grupo y puntos de apuestas procesados correctamente');
       
       // Recargar la lista de partidos para reflejar los cambios
       await loadAllMatches();
       
     } catch (err) {
-      console.error('Error al procesar estadísticas:', err);
-      setError(err.response?.data?.message || 'Error al procesar estadísticas de grupos');
+      console.error('Error al procesar estadísticas o puntos:', err);
+      setError(err.response?.data?.message || 'Error al procesar estadísticas y puntos');
     } finally {
       setProcessingStats(false);
+      setUpdatingPoints(false);
     }
   };
   
-  // Modificar la función handleUpdateScore para revertir estadísticas cuando sea necesario
+  // Modificar la función handleUpdateScore para incluir la actualización de fecha, hora y estadio
   const handleUpdateScore = async () => {
     try {
       setUpdatingScore(true);
@@ -254,25 +313,35 @@ export default function CreateMatch() {
         await API.post(`/group-statistics/${selectedMatch.id}/revert`);        
         console.log('Estadísticas revertidas correctamente');
       }
+      
+      // Construir la nueva fecha y hora formateada
+      const newDateTime = `${editMatchDate} ${editMatchTime}:00`;
   
-      // Actualizar el resultado del partido
+      // Actualizar el resultado y la información del partido
       const response = await API.put(`/schedule_results/${selectedMatch.id}`, {
         score_team1: scoreTeam1,
         score_team2: scoreTeam2,
-        procesado: selectedMatch.procesado
+        procesado: selectedMatch.procesado,
+        date_time: newDateTime,
+        id_stadium: editStadiumId
       });
   
-      console.log("Resultado actualizado: Equipo 1:", scoreTeam1, "Equipo 2:", scoreTeam2);
+      console.log("Partido actualizado:", {
+        score_team1: scoreTeam1,
+        score_team2: scoreTeam2,
+        date_time: newDateTime,
+        id_stadium: editStadiumId
+      });
       
-      setSuccess('Resultado actualizado correctamente');
+      setSuccess('Partido actualizado correctamente');
       setShowModal(false);
       
       // Recargar la lista de partidos para reflejar los cambios
       await loadAllMatches();
       
     } catch (err) {
-      console.error('Error al actualizar resultado:', err);
-      setError(err.response?.data?.message || 'Error al actualizar el resultado');
+      console.error('Error al actualizar partido:', err);
+      setError(err.response?.data?.message || 'Error al actualizar el partido');
     } finally {
       setUpdatingScore(false);
     }
@@ -477,7 +546,7 @@ export default function CreateMatch() {
             )}
             
             <Row>
-              <Col md={6}>
+              <Col md={4}>
                 <Form.Group className="mb-3" controlId="formDate">
                   <Form.Label>Fecha del Partido</Form.Label>
                   <Form.Control
@@ -490,7 +559,7 @@ export default function CreateMatch() {
                 </Form.Group>
               </Col>
               
-              <Col md={6}>
+              <Col md={4}>
                 <Form.Group className="mb-3" controlId="formTime">
                   <Form.Label>Hora del Partido (formato 24 horas)</Form.Label>
                   <Form.Control
@@ -499,6 +568,30 @@ export default function CreateMatch() {
                     onChange={(e) => setMatchTime(e.target.value)}
                     required
                   />
+                </Form.Group>
+              </Col>
+              
+              <Col md={4}>
+                <Form.Group className="mb-3" controlId="formStadium">
+                  <Form.Label>Estadio</Form.Label>
+                  {loadingStadiums ? (
+                    <div className="text-center">
+                      <Spinner animation="border" size="sm" />
+                    </div>
+                  ) : (
+                    <Form.Select
+                      value={idStadium}
+                      onChange={(e) => setIdStadium(parseInt(e.target.value))}
+                      required
+                    >
+                      <option value="">Seleccione el estadio</option>
+                      {stadiums.map(stadium => (
+                        <option key={`stadium-${stadium.id}`} value={stadium.id}>
+                          {stadium.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  )}
                 </Form.Group>
               </Col>
             </Row>
@@ -557,6 +650,7 @@ export default function CreateMatch() {
                         <th>Equipo Local</th>
                         <th>Resultado</th>
                         <th>Equipo Visitante</th>
+                        <th>Estadio</th>
                         <th>Fecha</th>
                         <th>Hora</th>
                         <th>Acciones</th>
@@ -602,8 +696,6 @@ export default function CreateMatch() {
                                 </div>
                               )}
                             </td>
-                            {/* Diagnóstico temporal */}
-                            {console.log("Match ID:", match.id, "procesado:", match.procesado, "tipo:", typeof match.procesado, "scores:", match.score_team1, match.score_team2)}
                             <td className="text-center">
                               <div className="d-flex flex-column align-items-center">
                                 {isValidBase64Image(match.team2?.team_shield) ? (
@@ -620,6 +712,7 @@ export default function CreateMatch() {
                                 <span>{match.team2?.name}</span>
                               </div>
                             </td>
+                            <td className="text-center">{match.stadium?.name || "No definido"}</td>
                             <td className="text-center">{date}</td>
                             <td className="text-center">{time}</td>                            
                             <td className="text-center">
@@ -632,12 +725,12 @@ export default function CreateMatch() {
                                   Actualizar
                                 </Button>
                                 
-                                {/* Botón para procesar estadísticas, habilitado solo cuando procesado=0 */}
+                                {/* Botón para procesar estadísticas y puntos */}
                                 <Button
                                   variant="outline-success"
                                   onClick={() => handleUpdateGroupStats(match)}
                                   disabled={
-                                    processingStats || 
+                                    processingStats || updatingPoints || 
                                     !(match.procesado === 0 || match.procesado === false || match.procesado === '0') ||
                                     match.score_team1 === null || 
                                     match.score_team2 === null
@@ -648,10 +741,10 @@ export default function CreateMatch() {
                                       ? "El partido debe tener resultados para procesar estadísticas" 
                                       : match.procesado !== 0 
                                         ? "El partido ya ha sido procesado" 
-                                        : "Procesar estadísticas del partido"
+                                        : "Procesar estadísticas y puntos del partido"
                                   }
                                 >
-                                  {processingStats ? (
+                                  {processingStats || updatingPoints ? (
                                     <>
                                       <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
                                       Procesando...
@@ -682,7 +775,7 @@ export default function CreateMatch() {
       {/* Modal para actualizar resultado */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>Actualizar Resultado</Modal.Title>
+          <Modal.Title>Actualizar Partido</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {error && <Alert variant="danger">{error}</Alert>}
@@ -726,13 +819,43 @@ export default function CreateMatch() {
                 </div>
               </div>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Fecha y hora del partido</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  value={`${formatDateTime(selectedMatch.date_time).date} ${formatDateTime(selectedMatch.date_time).time}`} 
-                  disabled 
-                />
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group controlId="editDate">
+                    <Form.Label>Fecha del Partido</Form.Label>
+                    <Form.Control 
+                      type="date" 
+                      value={editMatchDate}
+                      onChange={(e) => setEditMatchDate(e.target.value)}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group controlId="editTime">
+                    <Form.Label>Hora del Partido</Form.Label>
+                    <Form.Control 
+                      type="time" 
+                      value={editMatchTime}
+                      onChange={(e) => setEditMatchTime(e.target.value)}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+
+              <Form.Group className="mb-3" controlId="editStadium">
+                <Form.Label>Estadio</Form.Label>
+                <Form.Select
+                  value={editStadiumId}
+                  onChange={(e) => setEditStadiumId(parseInt(e.target.value))}
+                  required
+                >
+                  <option value="">Seleccione el estadio</option>
+                  {stadiums.map(stadium => (
+                    <option key={`edit-stadium-${stadium.id}`} value={stadium.id}>
+                      {stadium.name}
+                    </option>
+                  ))}
+                </Form.Select>
               </Form.Group>
 
               <Row>
@@ -800,7 +923,7 @@ export default function CreateMatch() {
                 Actualizando...
               </>
             ) : (
-              'Guardar Resultado'
+              'Guardar Cambios'
             )}
           </Button>
         </Modal.Footer>

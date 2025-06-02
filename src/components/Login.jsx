@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Importa useNavigate
+import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
 import API from '../api'; // Asegúrate de que esta instancia esté configurada correctamente
 
@@ -7,22 +7,56 @@ export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); // Hook para redirigir
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     try {
+      // The API response structure is:
+      // {
+      //     "message": "Bienvenido, Admin User!",
+      //     "user": {
+      //         "id": 9,
+      //         "name": "Admin User",
+      //         // ... other user details
+      //     },
+      //     "token": "..."
+      // }
       const response = await API.post('/login', { email, password });
-      const { token, message } = response.data;
+      const { token, user, message } = response.data; // Destructure 'user' object directly
 
       console.log('Respuesta del API:', response.data); // Depuración
-      onLogin(token, message); // Llama a handleLogin en App.js
+
+      // --- THE CRUCIAL CHANGE IS HERE ---
+      // 1. Save the token to localStorage
+      localStorage.setItem('token', token);
+
+      // 2. Extract and save the user ID from the 'user' object
+      if (user && user.id) { // Check if 'user' object and its 'id' property exist
+        localStorage.setItem('userId', user.id);
+        console.log('User ID guardado:', user.id); // Depuración
+      } else {
+        // Handle case where user data or ID is missing in the response
+        console.warn("User ID not found in login response. Betting functionality may be affected.");
+        setError("Error al obtener el ID de usuario. Por favor, intenta iniciar sesión de nuevo.");
+        // Optionally, prevent further action if userId is critical
+        return;
+      }
+      // --- END CRUCIAL CHANGE ---
+
+      // If you still need to call onLogin for other global state updates, keep it.
+      if (onLogin) {
+        onLogin(token, message);
+      }
+
       console.log('Redirigiendo al Home...');
-      navigate('/home'); // Redirige al Home después del login
+      navigate('/home'); // Redirect to Home after login
+
     } catch (err) {
       setError(err.response?.data?.message || 'Error en autenticación');
+      console.error("Login error:", err);
     }
   };
 

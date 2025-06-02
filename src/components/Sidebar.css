@@ -4,42 +4,76 @@
   left: 0;
   bottom: 0;
   height: 100%;
+  width: 280px;
+  z-index: 1030;
   overflow-y: auto;
-  z-index: 1000;
+  transition: transform 0.3s ease;
 }
 
-/* Reglas para el enlace más específicas */
+/* Estilos para el enlace */
 .sidebar .sidebar-link {
   display: block;
   width: 100%;
   padding: 0.5rem 1rem;
-  color: white !important; /* Forzar color blanco */
+  color: white !important;
   text-decoration: none;
-  background-color: transparent !important; /* Forzar transparente */
+  background-color: transparent !important;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 0.25rem;
   transition: all 0.2s ease-in-out;
 }
 
-/* Reglas de hover más específicas con !important */
+/* Hover y Focus */
 .sidebar .sidebar-link:hover,
 .sidebar .sidebar-link:focus,
 .sidebar .sidebar-link:active {
-  background-color: rgba(0, 123, 255, 0.8) !important; /* Forzar color de fondo */
-  color: white !important; /* Forzar color de texto */
+  background-color: rgba(0, 123, 255, 0.8) !important;
+  color: white !important;
   transform: translateX(5px);
   border-color: white;
   text-decoration: none;
 }
 
-/* Asegurarse que Bootstrap no sobrescriba */
-.sidebar .sidebar-link:hover:not(.active),
-.sidebar .sidebar-link:focus:not(.active) {
-  background-color: rgba(0, 123, 255, 0.8) !important;
-  color: white !important;
+/* Overlay para cerrar sidebar en móvil */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1020;
+  display: none;
 }
 
-/* Reglas para iconos */
-.sidebar .sidebar-link i {
-  color: white !important;
+.btn-close-sidebar {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+}
+
+/* Media queries para responsive */
+@media (max-width: 991.98px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-overlay {
+    display: block;
+  }
+}
+
+@media (min-width: 992px) {
+  .btn-close-sidebar {
+    display: none;
+  }
 }

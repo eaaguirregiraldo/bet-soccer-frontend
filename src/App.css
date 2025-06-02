@@ -1,14 +1,34 @@
 /* Contenedor principal */
 .app-container {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
+  position: relative;
 }
 
 /* Menú lateral */
 .sidebar {
-  width: 350px;
-  background-color: #f8f9fa;
-  border-right: 1px solid #ddd;
+  width: 280px;
+  background-color: #0d6efd;
+  color: white;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1030;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+}
+
+/* Overlay para cerrar sidebar en móvil */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1020;
+  display: none;
 }
 
 /* Contenedor principal (derecha del menú) */
@@ -16,14 +36,28 @@
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  transition: margin-left 0.3s ease;
 }
 
 /* Header */
 header {
-  background-color: #007bff;
-  color: white;
+  background-color: white;
+  color: #333;
   padding: 10px 20px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+}
+
+/* Botón hamburguesa */
+.menu-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: none;
+  color: #0d6efd;
+  padding: 0;
 }
 
 /* Contenedor del contenido principal */
@@ -35,8 +69,72 @@ header {
 
 /* Footer */
 .footer {
-  background-color: #343a40;
-  color: white;
+  background-color: white;
+  color: #333;
   padding: 10px 20px;
   text-align: center;
+  border-top: 1px solid #ddd;
+}
+
+/* Estilos responsivos */
+@media (min-width: 992px) {
+  .main-content {
+    margin-left: 280px; /* Ancho del sidebar */
+    width: calc(100% - 280px);
+  }
+}
+
+@media (max-width: 991.98px) {
+  /* Estilos para tablets y móviles */
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-overlay.show {
+    display: block;
+  }
+  
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .menu-toggle {
+    display: block;
+    margin-right: 10px;
+  }
+  
+  .content-container {
+    padding: 15px;
+  }
+}
+
+/* Estilos para móviles pequeños */
+@media (max-width: 576px) {
+  .content-container {
+    padding: 10px;
+  }
+  
+  header {
+    padding: 8px 12px;
+  }
+  
+  .footer {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Clase para autenticación */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background-color: #f8f9fa;
 }

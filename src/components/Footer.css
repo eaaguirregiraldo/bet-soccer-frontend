@@ -1,0 +1,13 @@
+.app-footer {
+    padding: 1rem;
+    background-color: white;
+    text-align: center;
+    border-top: 1px solid #dee2e6;
+  }
+  
+  @media (max-width: 767.98px) {
+    .app-footer {
+      padding: 0.75rem;
+      font-size: 0.85rem;
+    }
+  }

@@ -10,11 +10,17 @@ import CreateGroup from './components/CreateGroup';
 import CreateStadium from './components/CreateStadium';
 import CreateMatch from './components/CreateMatch';
 import Home from './pages/Home';
+import PlaceBetPage from './components/PlaceBetPage';
+import GroupStandingsPage from './components/GroupStandingsPage';
+import MassBets from './components/MassBets';
+import ScoreboardPage from './components/ScoreBoardPage';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import './App.css';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [message, setMessage] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Recuperar datos de localStorage al montar el componente
   useEffect(() => {
@@ -45,6 +51,11 @@ export default function App() {
     setMessage('');
   };
 
+   // Función para controlar la apertura/cierre del sidebar
+   const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <Router>
       {!user ? (
@@ -57,17 +68,30 @@ export default function App() {
           </Routes>
         </div>
       ) : (
-        // Layout para usuarios autenticados
-        <div className="app-container d-flex">
-          {/* Sidebar en la parte izquierda */}
-          <Sidebar message={message} />
+        // Layout para usuarios autenticados (ahora responsive)
+        <div className="app-container">
+          {/* Overlay para cerrar sidebar en móviles */}
+          {sidebarOpen && (
+            <div className="sidebar-overlay d-lg-none" onClick={toggleSidebar}></div>
+          )}
           
-          <div className="main-content d-flex flex-column flex-grow-1">   
-            {/* Header en la parte superior derecha */}
-            <Header message={message} onLogout={handleLogout} />
+          {/* Sidebar con props para controlar visibilidad */}
+          <Sidebar 
+            message={message} 
+            isOpen={sidebarOpen} 
+            toggleSidebar={toggleSidebar} 
+          />
+          
+          <div className="main-content">   
+            {/* Header con botón para menú hamburguesa */}
+            <Header 
+              message={message} 
+              onLogout={handleLogout} 
+              toggleSidebar={toggleSidebar} 
+            />
             
-            {/* Contenido principal en el centro */}
-            <div className="content-container flex-grow-1">
+            {/* Contenido principal */}
+            <div className="content-container">
               <Routes>
                 <Route path="/home" element={<Home user={user} />} />
                 <Route 
@@ -78,7 +102,7 @@ export default function App() {
                       : <Navigate to="/home" />
                   } 
                 />
-                {/* Añadir esta nueva ruta */}
+                {/* Resto de rutas sin cambios... */}
                 <Route 
                   path="/create-group" 
                   element={
@@ -87,7 +111,7 @@ export default function App() {
                       : <Navigate to="/home" />
                   } 
                 />
-                 <Route 
+                <Route 
                   path="/create-stadium" 
                   element={
                     message === 'Bienvenido, Admin User!' 
@@ -95,7 +119,6 @@ export default function App() {
                       : <Navigate to="/home" />
                   } 
                 />
-                {/* Añadir esta nueva ruta */}
                 <Route 
                   path="/create-match" 
                   element={
@@ -104,11 +127,43 @@ export default function App() {
                       : <Navigate to="/home" />
                   } 
                 />
+                <Route 
+                  path="/mass-bets" 
+                  element={
+                    message === 'Bienvenido, Admin User!' 
+                      ? <MassBets /> 
+                      : <Navigate to="/home" />
+                  } 
+                />
+                <Route
+                  path="/bet-match" // Esta es la ruta para apostar
+                  element={
+                    message !== 'Bienvenido, Admin User!' && user // Solo si NO es admin y está logueado
+                      ? <PlaceBetPage /> // Renderiza el componente de apuestas
+                      : <Navigate to="/home" /> // Si es admin o no está logueado, redirige a home
+                  }
+                />
+                <Route
+                  path="/group-standings" // Esta es la ruta para apostar
+                  element={
+                    message !== 'Bienvenido, Admin User!' && user // Solo si NO es admin y está logueado
+                      ? <GroupStandingsPage /> // Renderiza el componente de apuestas
+                      : <Navigate to="/home" /> // Si es admin o no está logueado, redirige a home
+                  }
+                />
+                 <Route
+                  path="/scoreboard" 
+                  element={
+                    message !== 'Bienvenido, Admin User!' && user // Solo si NO es admin y está logueado
+                      ? <ScoreboardPage /> // Renderiza el componente de apuestas
+                      : <Navigate to="/home" /> // Si es admin o no está logueado, redirige a home
+                  }
+                />                 
                 <Route path="*" element={<Navigate to="/home" />} />
               </Routes>
             </div>
             
-            {/* Footer en la parte inferior derecha */}
+            {/* Footer */}
             <Footer />
           </div>
         </div>

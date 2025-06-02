@@ -1,16 +1,23 @@
 import React from 'react';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import './Header.css';
 
-export default function Header({ message, onLogout }) {
+export default function Header({ message, onLogout, toggleSidebar }) {
   return (
-    <header className="d-flex align-items-center p-2 bg-white text-dark">      
-      {/* Espacio a la izquierda que queda vacío */}
-      <div className="flex-grow-1"></div>
+    <header className="app-header">
+      {/* Botón hamburguesa para pantallas pequeñas */}
+      <button 
+        className="btn-menu d-lg-none"
+        onClick={toggleSidebar}
+        aria-label="Menú"
+      >
+        <i className="bi bi-list"></i>
+      </button>
       
-      {/* Contenido alineado a la derecha */}
-      <div className="me-3">
-        <span className="text-dark fw-bold">{message}</span>
-        <button className="btn btn-outline-danger ms-3" onClick={onLogout} title="Cerrar Sesión">
+      <div className="flex-spacer"></div>
+      
+      <div className="header-content">
+        <span className="header-message">{message}</span>
+        <button className="logout-button" onClick={onLogout} title="Cerrar Sesión">
           <i className="bi bi-box-arrow-right"></i>
         </button>
       </div>
